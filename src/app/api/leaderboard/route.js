@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb';
 import { NextResponse } from 'next/server';
-
+//ini diupdate
 const uri = process.env.MONGODB_URI;
 
 export async function GET() {
@@ -46,3 +46,4 @@ export async function GET() {
     if (client) await client.close();
   }
 }
+
