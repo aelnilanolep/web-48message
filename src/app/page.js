@@ -1,5 +1,5 @@
 "use client";
-
+//new
 import { useState, useEffect } from 'react';
 import { Trophy, Store, Mail, MessageSquareDashed, Sun, Moon, ShoppingBag, X, Menu, LogIn, User } from 'lucide-react';
 
@@ -8,16 +8,17 @@ export default function Beranda() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [topUsers, setTopUsers] = useState([]);
   const [userData, setUserData] = useState(null);
+  const [mounted, setMounted] = useState(false); // <--- TAMBAHAN BIAR GA ERROR HYDRATION
 
-  // FETCH DATA LEADERBOARD ASLI
-useEffect(() => {
-    let isMounted = true;
+  // 1. FIX: Pastikan komponen sudah mounted di browser
+  useEffect(() => {
+    setMounted(true);
+    
     async function fetchLeaderboard() {
       try {
         const res = await fetch('/api/leaderboard');
-        if (!res.ok) throw new Error('API Error');
         const data = await res.json();
-        if (isMounted && !data.error) {
+        if (!data.error) {
           setTopUsers(data);
         }
       } catch (err) {
@@ -25,9 +26,9 @@ useEffect(() => {
       }
     }
     fetchLeaderboard();
-    return () => { isMounted = false };
-  }, []); 
+  }, []);
 
+  // 2. Logic Login Simulasi
   const handleLogin = () => {
     setUserData({ id: 7846387511, name: 'Audrey Irene', koin: 195997250 });
     setIsMenuOpen(false);
@@ -38,6 +39,9 @@ useEffect(() => {
     { name: 'Tanpa Jeda', normal: 5000, disc: 2000, label: '60%' },
     { name: 'Title Menfess', normal: 6000, disc: 3000, label: '50%' },
   ];
+
+  // Cegah render sebelum mounted biar ga bentrok sama server (Hydration Fix)
+  if (!mounted) return null;
 
   const theme = {
     bg: isDark ? "bg-[#14050c]" : "bg-[#fdf2f8]",
@@ -59,7 +63,7 @@ useEffect(() => {
       {/* POP-UP MENU */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`${theme.card} border ${theme.border} w-full max-w-sm rounded-[2.5rem] p-8 relative shadow-2xl`}>
+          <div className={`${theme.card} border ${theme.border} w-full max-w-sm rounded-[2.5rem] p-8 relative shadow-2xl animate-in fade-in zoom-in duration-200`}>
             <button onClick={() => setIsMenuOpen(false)} className={`absolute top-6 right-6 ${theme.textSub}`}><X size={28} /></button>
             <div className="flex items-center gap-2 text-pink-500 font-black text-xl mb-6"><MessageSquareDashed /> 48MESSAGE</div>
 
@@ -100,7 +104,7 @@ useEffect(() => {
       {/* CONTENT GRID */}
       <section className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-20">
         
-        {/* LEADERBOARD */}
+        {/* LEADERBOARD (DINAMIS) */}
         <div className={`${theme.card} border ${theme.border} rounded-[2.5rem] p-8 shadow-xl flex flex-col min-h-[500px]`}>
           <div className="flex items-center gap-4 mb-8">
             <div className="bg-yellow-400/20 p-3 rounded-2xl text-yellow-600"><Trophy /></div>
@@ -115,7 +119,12 @@ useEffect(() => {
                 </div>
                 <span className="bg-yellow-400 text-black font-black px-3 py-1 rounded-lg text-[10px] shadow-sm">{u.score} MSG</span>
               </div>
-            )) : <div className="text-center py-20 opacity-40 font-bold italic">Menghubungkan ke MongoDB...</div>}
+            )) : (
+              <div className="flex flex-col items-center justify-center h-full opacity-40 italic">
+                <div className="animate-spin mb-4"><Trophy size={40}/></div>
+                <p>Menghubungkan ke MongoDB...</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -146,8 +155,8 @@ useEffect(() => {
             <h3 className="text-2xl font-black">Kirim Pesan</h3>
           </div>
           <div className="flex flex-col gap-4 flex-1">
-            <input type="text" placeholder="Nama Samaran..." className={`${theme.inputBg} border ${theme.border} rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-pink-300 outline-none`} />
-            <textarea placeholder="Pesanmu..." className={`${theme.inputBg} border ${theme.border} rounded-2xl p-4 text-sm font-bold flex-1 resize-none outline-none focus:ring-2 focus:ring-pink-300`}></textarea>
+            <input type="text" placeholder="Nama Samaran..." className={`${theme.inputBg} border ${theme.border} rounded-2xl p-4 text-sm font-bold focus:ring-2 focus:ring-pink-300 outline-none transition-all`} />
+            <textarea placeholder="Pesanmu..." className={`${theme.inputBg} border ${theme.border} rounded-2xl p-4 text-sm font-bold flex-1 resize-none outline-none focus:ring-2 focus:ring-pink-300 transition-all`}></textarea>
             <button className="bg-pink-500 text-white font-black py-5 rounded-2xl shadow-lg shadow-pink-300 hover:bg-pink-600 transition-all uppercase tracking-widest text-xs">Kirim Menfess</button>
           </div>
         </div>
