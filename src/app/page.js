@@ -1,5 +1,5 @@
 "use client";
-//new
+//neww
 import { useState, useEffect } from 'react';
 import { Trophy, Store, Mail, MessageSquareDashed, Sun, Moon, ShoppingBag, X, Menu, LogIn, User } from 'lucide-react';
 
