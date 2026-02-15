@@ -1,45 +1,44 @@
 import { MongoClient } from 'mongodb';
 import { NextResponse } from 'next/server';
-
+//new
 const uri = process.env.MONGODB_URI;
 
-// Fungsi koneksi yang lebih simpel dan to-the-point
-async function getDb() {
-  const client = new MongoClient(uri);
-  await client.connect();
-  // BERDASARKAN GAMBAR 13, NAMA DB LU ADALAH: bot_48medfess
-  return client.db('bot_48medfess'); 
-}
-
 export async function GET() {
+  let client;
   try {
-    const db = await getDb();
+    if (!uri) return NextResponse.json({ error: "URI Missing" }, { status: 500 });
+
+    client = new MongoClient(uri);
+    await client.connect();
     
-    // Ambil OWNER_ID dari .env buat filter (ID lu: 7846387511)
+    // SESUAI GAMBAR 13: DB = bot_48medfess, Collection = users
+    const db = client.db('bot_48medfess');
     const ownerIds = (process.env.OWNER_ID || "").split(',').map(id => id.trim());
 
-    // BERDASARKAN GAMBAR 13, NAMA COLLECTION LU ADALAH: users
-    // Kita cari yang promote_count-nya di atas 0
-    const topUsersRaw = await db.collection('users')
-      .find({ promote_count: { $gt: 0 } })
-      .sort({ promote_count: -1 })
-      .limit(10)
-      .toArray();
+    // Tarik semua user dulu (buang filter $gt: 0 biar gak error tipe data)
+    const allUsers = await db.collection('users').find({}).toArray();
 
-    // Filter manual biar gak ada admin/owner di list
-    const formattedUsers = topUsersRaw
-      .filter(u => !ownerIds.includes(String(u.id)))
+    // Filter manual di sisi server biar lebih akurat
+    const formattedUsers = allUsers
+      .filter(u => {
+        const count = Number(u.promote_count) || 0;
+        const isOwner = ownerIds.includes(String(u.id));
+        return count > 0 && !isOwner;
+      })
+      .sort((a, b) => (Number(b.promote_count) || 0) - (Number(a.promote_count) || 0))
+      .slice(0, 10)
       .map((u, index) => ({
         rank: index + 1,
-        name: u.name || 'Anonymous',
-        score: u.promote_count || 0
+        name: u.name || 'User',
+        score: Number(u.promote_count) || 0
       }));
 
-    // Kalau datanya beneran dapet, kirim!
     return NextResponse.json(formattedUsers);
 
   } catch (error) {
-    console.error("KESALAHAN FATAL:", error.message);
-    return NextResponse.json({ error: "Gagal narik data dari bot_48medfess" }, { status: 500 });
+    console.error("VERCEL API ERROR:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  } finally {
+    if (client) await client.close();
   }
 }
